@@ -5,7 +5,6 @@ import AuthForm from '../../components/auth/AuthForm';
 
 const LoginForm = () => {
   const dispatch = useDispatch();
-
   const { form } = useSelector(({ auth }) => ({
     form: auth.login,
   }));
@@ -35,8 +34,8 @@ const LoginForm = () => {
     <AuthForm
       type="login"
       form={form}
-      onchange={onChange}
-      onsubmit={onSubmit}
+      onChange={onChange}
+      onSubmit={onSubmit}
     />
   );
 };
