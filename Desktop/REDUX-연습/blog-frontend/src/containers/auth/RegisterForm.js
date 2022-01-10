@@ -1,12 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import AuthForm from '../../components/auth/AuthForm';
-import { changeField, initializeForm } from '../../modules/auth';
+import { changeField, initializeForm, register } from '../../modules/auth';
+import { check } from '../../modules/user';
+import { useNavigate } from 'react-router-dom';
 
 const RegisterForm = () => {
   const dispatch = useDispatch();
-  const { form } = useSelector(({ auth }) => ({
+  const navigate = useNavigate();
+  const [error, setError] = useState();
+
+  const { form, auth, authError, user } = useSelector(({ auth, user }) => ({
     form: auth.register,
+    auth: auth.auth,
+    authError: auth.authError,
+    user: user.user,
   }));
 
   //인풋변경 핸들러
@@ -24,18 +32,65 @@ const RegisterForm = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
+    const { username, password, passwordConfirm } = form;
+    // 하나라도 비어 있다면
+    if ([username, password, passwordConfirm].includes('')) {
+      setError('빈 칸을 모두 입력하세요.');
+      return;
+    }
+    // 비밀번호가 일치하지 않는다면
+    if (password !== passwordConfirm) {
+      setError('비밀번호가 일치하지 않습니다.');
+      changeField({ form: 'register', key: 'password', value: '' });
+      changeField({ form: 'register', key: 'passwordConfirm', value: '' });
+      return;
+    }
+    dispatch(register({ username, password }));
   };
 
   useEffect(() => {
     dispatch(initializeForm('register'));
   }, [dispatch]);
 
+  useEffect(() => {
+    if (authError) {
+      // 계정명이 이미 존재할 때
+      if (authError.response.status === 409) {
+        setError('이미 존재하는 계정명입니다.');
+        return;
+      }
+      // 기타 이유
+      setError('회원가입 실패');
+      return;
+    }
+
+    if (auth) {
+      console.log('회원가입 성공');
+      console.log(auth);
+      dispatch(check());
+    }
+  }, [auth, authError, dispatch]);
+
+  useEffect(() => {
+    if (user) {
+      console.log('check API 성공');
+      console.log(user);
+      navigate('/');
+      try {
+        localStorage.setItem('user', JSON.stringify(user));
+      } catch (e) {
+        console.log('localStorage is not working');
+      }
+    }
+  }, [navigate, user]);
+
   return (
     <AuthForm
       type="register"
       form={form}
-      onchange={onChange}
-      onsubmit={onSubmit}
+      onChange={onChange}
+      onSubmit={onSubmit}
+      error={error}
     />
   );
 };
